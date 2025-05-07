@@ -42,6 +42,7 @@ tuning_dict = {
 # MIDI Setup
 try:
     midi_out = open_output()
+    print(f"Sending MIDI to: {midi_out.name}")
 except IOError:
     midi_out = None
     print("No MIDI output device found.")
@@ -83,6 +84,8 @@ class JammerApp:
         root.bind("<KeyRelease>", self.on_key_release)
         root.bind("<FocusIn>", self.on_focus)
         root.bind("<FocusOut>", self.on_blur)
+
+        self.active_notes = set()
 
     def tune(self, tuning):
         return tuning_dict[tuning]
@@ -150,8 +153,11 @@ class JammerApp:
         self.midi_label.config(bg="lightgrey")
         char = event.char.lower()
         note = char_to_note.get(char)
-        if note is not None:
+
+        if note is not None and note not in self.active_notes:
             send_note_on(note)
+            self.active_notes.add(note)
+
         if char in self.char_to_widget:
             self.char_to_widget[char].config(bg="lightblue")
 
@@ -159,8 +165,11 @@ class JammerApp:
         self.midi_label.config(bg="#DDD")
         char = event.char.lower()
         note = char_to_note.get(char)
-        if note is not None:
+
+        if note is not None and note in self.active_notes:
             send_note_off(note)
+            self.active_notes.remove(note)
+
         if char in self.char_to_widget:
             original_bg = self.widget_bg_colors.get(char, "#EEE")
             self.char_to_widget[char].config(bg=original_bg)
